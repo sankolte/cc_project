@@ -1,0 +1,19 @@
+{
+  "name": "anomaly-detection-platform",
+  "version": "1.0.0",
+  "description": "Cloud-Based Web Application Monitoring & Anomaly Detection Platform",
+  "scripts": {
+    "test:all": "node tests/verify-phase0.js && node tests/verify-phase1.js && node tests/verify-phase2.js && node tests/verify-phase3.js && node tests/verify-phase4.js",
+    "test:phase0": "node tests/verify-phase0.js",
+    "test:phase1": "node tests/verify-phase1.js",
+    "test:phase2": "node tests/verify-phase2.js",
+    "test:phase3": "node tests/verify-phase3.js",
+    "test:phase4": "node tests/verify-phase4.js",
+    "start:target": "node target-app/server.js",
+    "start:monitor": "node monitor-server/server.js",
+    "simulate:normal": "node simulator.js normal",
+    "simulate:slow": "node simulator.js slow",
+    "simulate:error": "node simulator.js error"
+  },
+  "devDependencies": {}
+}

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloud Anomaly Detection & Monitoring Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Chart.js from CDN (Zero build step, maximum reliability) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="brand-icon">☁️</div>
+      <div>
+        <h1 class="brand-title">CloudPulse Anomaly Engine</h1>
+        <p class="brand-subtitle">Real-time Telemetry & SLA Breach Detection Platform</p>
+      </div>
+    </div>
+
+    <!-- AWS Cloud Infrastructure Status Badges -->
+    <div class="cloud-pills">
+      <div class="pill pill-aws" title="Compute Host"><span>EC2</span><span class="dot"></span></div>
+      <div class="pill pill-aws" title="Decoupled Telemetry Ingestion"><span>SQS</span><span class="dot"></span></div>
+      <div class="pill pill-aws" title="Cold Storage Archival"><span>S3</span><span class="dot"></span></div>
+      <div class="pill pill-aws" title="Structured Metrics & Incidents"><span>RDS</span><span class="dot"></span></div>
+    </div>
+
+    <!-- Quick Live Demo Trigger Buttons -->
+    <div class="demo-controls">
+      <button class="btn btn-normal" id="btnSimNormal" title="Send steady traffic (products & orders)">🟢 Normal Load</button>
+      <button class="btn btn-warning" id="btnSimSlow" title="Inject payment latency (>2000ms)">🟡 Inject Latency</button>
+      <button class="btn btn-danger" id="btnSimError" title="Trigger HTTP 500 crashes">🔴 Trigger 500 Crash</button>
+      <button class="btn btn-secondary" id="btnFlushS3" title="Archive raw JSON batch to Amazon S3">🗄️ Flush S3</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Big Health Status Banner -->
+    <section class="hero-status" id="heroStatus">
+      <div class="status-indicator">
+        <span class="status-badge-glow" id="statusGlow"></span>
+        <span class="status-icon" id="statusIcon">🟢</span>
+      </div>
+      <div class="status-content">
+        <div class="status-header">
+          <span class="status-eyebrow">CLUSTER OPERATIONAL STATE</span>
+          <span class="status-timestamp" id="lastUpdated">Updated just now</span>
+        </div>
+        <h2 class="status-title" id="statusTitle">SYSTEM HEALTHY</h2>
+        <p class="status-desc" id="statusDesc">All telemetry within normal bounds. Response latency and error rates comply with SLA thresholds.</p>
+      </div>
+    </section>
+
+    <!-- KPI Metric Cards Grid -->
+    <section class="kpi-grid">
+      <div class="card kpi-card">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-info">
+          <span class="kpi-label">TOTAL REQUESTS</span>
+          <span class="kpi-value" id="kpiTotal">0</span>
+          <span class="kpi-sub">Ingested via SQS</span>
+        </div>
+      </div>
+
+      <div class="card kpi-card">
+        <div class="kpi-icon">⚡</div>
+        <div class="kpi-info">
+          <span class="kpi-label">AVG LATENCY</span>
+          <span class="kpi-value" id="kpiLatency">0 <small>ms</small></span>
+          <span class="kpi-sub" id="kpiLatencySub">SLA limit: 1500 ms</span>
+        </div>
+      </div>
+
+      <div class="card kpi-card">
+        <div class="kpi-icon">⚠️</div>
+        <div class="kpi-info">
+          <span class="kpi-label">ERROR RATE</span>
+          <span class="kpi-value" id="kpiErrorRate">0.0 <small>%</small></span>
+          <span class="kpi-sub" id="kpiErrorCount">0 server crashes</span>
+        </div>
+      </div>
+
+      <div class="card kpi-card">
+        <div class="kpi-icon">🚨</div>
+        <div class="kpi-info">
+          <span class="kpi-label">ACTIVE INCIDENTS</span>
+          <span class="kpi-value" id="kpiIncidents">0</span>
+          <span class="kpi-sub">SLA breaches</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts Section -->
+    <section class="charts-grid">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h3>📈 Latency Trend & SLA Threshold</h3>
+          <span class="badge-tag">Real-Time</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="latencyChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="card-header">
+          <h3>🎯 HTTP Status Code Distribution</h3>
+          <span class="badge-tag">2xx vs 5xx</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="statusChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Incidents & Live Logs Section -->
+    <section class="data-grid">
+      <!-- Active Incidents Panel -->
+      <div class="card incident-card">
+        <div class="card-header">
+          <h3>🚨 Anomaly Incidents Log</h3>
+          <span class="counter-badge" id="incidentCountBadge">0 Total</span>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>TYPE</th>
+                <th>SEVERITY</th>
+                <th>ENDPOINT</th>
+                <th>MEASURED</th>
+                <th>THRESHOLD</th>
+                <th>TIME</th>
+              </tr>
+            </thead>
+            <tbody id="incidentsTableBody">
+              <tr>
+                <td colspan="6" class="empty-state">No incidents detected. System is running cleanly.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Live Telemetry Stream -->
+      <div class="card stream-card">
+        <div class="card-header">
+          <h3>📡 Recent Telemetry Ingestion</h3>
+          <span class="badge-tag">Stream</span>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>METHOD</th>
+                <th>ENDPOINT</th>
+                <th>STATUS</th>
+                <th>LATENCY</th>
+                <th>TIME</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody">
+              <tr>
+                <td colspan="5" class="empty-state">Awaiting incoming telemetry...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Cloud Computing Mini-Project • AWS EC2 • Amazon SQS • Amazon S3 • Amazon RDS (PostgreSQL)</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
